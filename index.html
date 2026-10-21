@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <title>SEP400 Tenta-Trainer</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    :root {
+      --background: #f1f5f9;
+      --card: #ffffff;
+      --foreground: #0f172a;
+      --muted-foreground: #64748b;
+      --border: #e2e8f0;
+      --primary: #4f46e5;
+      --primary-foreground: #ffffff;
+      --accent: #eef2ff;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: #0f172a;
+        --card: #1e293b;
+        --foreground: #f1f5f9;
+        --muted-foreground: #94a3b8;
+        --border: #334155;
+        --primary: #6366f1;
+        --primary-foreground: #ffffff;
+        --accent: #1e1b4b;
+      }
+    }
+    * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
+    html, body { overscroll-behavior: none; }
+    .perspective-1000 { perspective: 1000px; }
+    .transform-style-3d { transform-style: preserve-3d; }
+    .backface-hidden { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+    .rotate-y-180 { transform: rotateY(180deg); }
+    .card-flip { transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1); }
+    .quiz-opt { transition: all 0.15s ease; }
+    .quiz-opt:active { transform: scale(0.98); }
+    .fade-in { animation: fadeIn 0.25s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+    .slide-left { animation: slideLeft 0.3s ease; }
+    @keyframes slideLeft { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: translateX(0); } }
+    .slide-right { animation: slideRight 0.3s ease; }
+    @keyframes slideRight { from { opacity: 0; transform: translateX(-40px); } to { opacity: 1; transform: translateX(0); } }
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(100,100,100,0.15); border-radius: 2px; }
+    @media (max-width: 640px) {
+      .mobile-stack { flex-direction: column !important; }
+    }
+  </style>
+</head>
+<body class="bg-[var(--background)] text-[var(--foreground)] antialiased min-h-screen flex flex-col select-none font-sans">
+
+  <!-- ========= HEADER ========= -->
+  <header class="w-full px-4 pt-4 pb-3 border-b border-[var(--border)] bg-[var(--card)]">
+    <div class="max-w-3xl mx-auto">
+      <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center gap-2 min-w-0">
+          <span class="text-xl">⚡</span>
+          <h1 class="text-base sm:text-lg font-bold tracking-tight truncate">SEP400 Tenta-Trainer</h1>
+        </div>
+        <span class="text-[10px] sm:text-xs bg-indigo-500/10 text-indigo-500 border border-indigo-500/20 px-2 py-0.5 rounded-full font-semibold whitespace-nowrap">Quizlet</span>
+      </div>
+
+      <!-- Tabs -->
+      <div class="flex gap-1 bg-[var(--background)] p-1 rounded-xl">
+        <button id="tab-cards" onclick="switchMode('cards')" class="flex-1 py-2.5 rounded-lg text-xs sm:text-sm font-semibold transition-all bg-indigo-600 text-white shadow-sm">
+          🗂️ Flashcards
+        </button>
+        <button id="tab-quiz" onclick="switchMode('quiz')" class="flex-1 py-2.5 rounded-lg text-xs sm:text-sm font-semibold text-[var(--muted-foreground)] transition-all">
+          🎯 Quiz
+        </button>
+        <button id="tab-list" onclick="switchMode('list')" class="flex-1 py-2.5 rounded-lg text-xs sm:text-sm font-semibold text-[var(--muted-foreground)] transition-all">
+          📚 Alla frågor
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ========= MODULE FILTER ========= -->
+  <div class="w-full px-4 py-3 bg-[var(--card)] border-b border-[var(--border)]">
+    <div class="max-w-3xl mx-auto flex items-center gap-2">
+      <label class="text-[10px] sm:text-xs font-bold text-[var(--muted-foreground)] uppercase tracking-wider whitespace-nowrap">Modul:</label>
+      <select id="module-select" onchange="filterModule(this.value)" class="flex-1 bg-[var(--background)] text-[var(--foreground)] border border-[var(--border)] rounded-lg px-3 py-2 text-xs sm:text-sm font-medium outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm">
+        <option value="all">Alla moduler</option>
+        <option value="1">Modul 1 – Processer & Agilt</option>
+        <option value="2">Modul 2 – Projektledning</option>
+        <option value="3">Modul 3 – Kravhantering</option>
+        <option value="4">Modul 4 – Arkitektur & Design</option>
+        <option value="5">Modul 5 – Testning & Kvalitet</option>
+        <option value="6">Modul 6 – Dependability & Security</option>
+        <option value="7">Modul 7 – Evolution & CM</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- ============================== MODE 1: FLASHCARDS ============================== -->
+  <main id="mode-cards" class="flex-1 flex flex-col px-4 py-4 max-w-3xl w-full mx-auto">
+
+    <!-- Progress -->
+    <div class="mb-3">
+      <div class="flex justify-between text-[10px] sm:text-xs text-[var(--muted-foreground)] mb-1.5 px-0.5">
+        <span>✅ Kan: <strong id="count-mastered" class="text-emerald-500">0</strong></span>
+        <span id="card-counter" class="font-bold text-[var(--foreground)]">1 / 40</span>
+        <span>🔄 Övar: <strong id="count-learning" class="text-amber-500">0</strong></span>
+      </div>
+      <div class="w-full bg-[var(--border)] h-1.5 rounded-full overflow-hidden flex">
+        <div id="progress-mastered" class="bg-emerald-500 h-full transition-all duration-300" style="width:0%"></div>
+        <div id="progress-learning" class="bg-amber-400 h-full transition-all duration-300" style="width:0%"></div>
+      </div>
+    </div>
+
+    <!-- Flashcard -->
+    <div id="flashcard-wrapper" class="relative flex-1 min-h-[260px] max-h-[420px] perspective-1000 cursor-pointer mb-3" onclick="flipCard()" ontouchstart="handleTouchStart(event)" ontouchmove="handleTouchMove(event)" ontouchend="handleTouchEnd(event)">
+      <div id="flashcard" class="w-full h-full relative transform-style-3d card-flip rounded-2xl shadow-lg border border-[var(--border)]">
+
+        <!-- FRONT -->
+        <div class="absolute inset-0 backface-hidden p-5 sm:p-7 flex flex-col justify-between rounded-2xl bg-[var(--card)]">
+          <div class="flex items-center justify-between gap-2">
+            <span id="card-chapter-badge" class="px-2 py-0.5 text-[10px] sm:text-xs font-semibold rounded-full bg-indigo-500/10 text-indigo-500 border border-indigo-500/20 whitespace-nowrap">Kap 2</span>
+            <span class="text-[10px] sm:text-xs text-[var(--muted-foreground)]">Tryck för att vända</span>
+          </div>
+          <div class="flex-1 flex items-center justify-center py-4">
+            <div class="text-center">
+              <span class="text-[10px] uppercase font-bold tracking-widest text-[var(--muted-foreground)] block mb-2">Fråga</span>
+              <h2 id="card-front-text" class="text-base sm:text-xl font-bold leading-relaxed">Laddar...</h2>
+            </div>
+          </div>
+          <div class="text-center text-[10px] sm:text-xs text-[var(--muted-foreground)]">
+            ← Svep för att bläddra →
+          </div>
+        </div>
+
+        <!-- BACK -->
+        <div class="absolute inset-0 backface-hidden rotate-y-180 p-5 sm:p-7 flex flex-col rounded-2xl bg-[var(--card)] border-t-4 border-indigo-500 overflow-y-auto">
+          <div class="flex items-center justify-between border-b border-[var(--border)] pb-2 mb-3">
+            <span class="text-[10px] sm:text-xs uppercase font-bold tracking-wider text-indigo-500">Svar</span>
+            <span class="text-[10px] sm:text-xs text-[var(--muted-foreground)]">Tryck för att vända</span>
+          </div>
+          <div id="card-back-text" class="flex-1 text-sm sm:text-base leading-relaxed"></div>
+          <div class="pt-2 mt-2 border-t border-[var(--border)] text-[10px] sm:text-xs text-[var(--muted-foreground)]">
+            <span id="card-category-text"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="space-y-2">
+      <!-- Nav Row -->
+      <div class="flex items-center gap-2">
+        <button onclick="prevCard()" class="flex-1 py-3 rounded-xl border border-[var(--border)] bg-[var(--card)] active:bg-[var(--border)] text-sm font-semibold transition-colors">
+          ← Föreg.
+        </button>
+        <button onclick="flipCard()" class="flex-1 py-3 rounded-xl bg-indigo-600 active:bg-indigo-700 text-white text-sm font-semibold shadow-sm transition-colors">
+          🔄 Vänd
+        </button>
+        <button onclick="nextCard()" class="flex-1 py-3 rounded-xl border border-[var(--border)] bg-[var(--card)] active:bg-[var(--border)] text-sm font-semibold transition-colors">
+          Nästa →
+        </button>
+      </div>
+      <!-- Rating Row -->
+      <div class="flex items-center gap-2">
+        <button onclick="markCard(false)" class="flex-1 py-3 rounded-xl bg-amber-500/10 active:bg-amber-500/20 text-amber-600 border border-amber-500/25 text-sm font-semibold transition-colors">
+          ❌ Öva mer
+        </button>
+        <button onclick="markCard(true)" class="flex-1 py-3 rounded-xl bg-emerald-500/10 active:bg-emerald-500/20 text-emerald-600 border border-emerald-500/25 text-sm font-semibold transition-colors">
+          ✅ Kan!
+        </button>
+      </div>
+      <!-- Extras -->
+      <div class="flex items-center justify-center gap-4 pt-1">
+        <button onclick="shuffleDeck()" class="text-xs text-[var(--muted-foreground)] active:text-[var(--foreground)]">🔀 Blanda</button>
+        <button onclick="resetStats()" class="text-xs text-[var(--muted-foreground)] active:text-[var(--foreground)]">🗑️ Nollställ</button>
+      </div>
+    </div>
+
+    <!-- Desktop Keyboard Hint -->
+    <p class="hidden sm:block text-center text-[10px] text-[var(--muted-foreground)] mt-2">
+      ⌨️ <kbd class="px-1 py-0.5 rounded bg-[var(--card)] border border-[var(--border)] text-[10px]">Mellanslag</kbd> vänd · 
+      <kbd class="px-1 py-0.5 rounded bg-[var(--card)] border border-[var(--border)] text-[10px]">←→</kbd> bläddra · 
+      <kbd class="px-1 py-0.5 rounded bg-[var(--card)] border border-[var(--border)] text-[10px]">1</kbd> öva · 
+      <kbd class="px-1 py-0.5 rounded bg-[var(--card)] border border-[var(--border)] text-[10px]">2</kbd> kan
+    </p>
+  </main>
+
+  <!-- ============================== MODE 2: QUIZ ============================== -->
+  <main id="mode-quiz" style="display:none" class="flex-1 flex flex-col px-4 py-4 max-w-3xl w-full mx-auto">
+    <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-5 sm:p-7 shadow-sm fade-in flex-1 flex flex-col">
+      <!-- Quiz Header -->
+      <div class="flex items-center justify-between border-b border-[var(--border)] pb-3 mb-4">
+        <div class="flex items-center gap-2">
+          <span id="quiz-chapter-tag" class="text-[10px] sm:text-xs font-semibold px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-500 border border-indigo-500/20">Modul 1</span>
+          <span class="text-[10px] sm:text-xs text-[var(--muted-foreground)]">#<span id="quiz-num">1</span></span>
+        </div>
+        <div class="text-sm font-bold">
+          <span id="quiz-score" class="text-emerald-500">0</span><span class="text-[var(--muted-foreground)]"> / </span><span id="quiz-attempted" class="text-[var(--muted-foreground)]">0</span>
+        </div>
+      </div>
+
+      <!-- Question -->
+      <h2 id="quiz-question-text" class="text-base sm:text-lg font-bold mb-5 leading-snug flex-shrink-0">Laddar fråga...</h2>
+
+      <!-- Options -->
+      <div id="quiz-options-container" class="space-y-2.5 mb-4 flex-1 overflow-y-auto"></div>
+
+      <!-- Feedback -->
+      <div id="quiz-feedback-box" style="display:none" class="p-4 rounded-xl mb-4 text-sm leading-relaxed border fade-in"></div>
+
+      <!-- Next -->
+      <button id="quiz-next-btn" onclick="generateQuizQuestion()" style="display:none" class="w-full py-3.5 rounded-xl bg-indigo-600 active:bg-indigo-700 text-white text-sm font-bold shadow transition-colors fade-in">
+        Nästa fråga →
+      </button>
+    </div>
+  </main>
+
+  <!-- ============================== MODE 3: LIST ============================== -->
+  <main id="mode-list" style="display:none" class="flex-1 flex flex-col px-4 py-4 max-w-3xl w-full mx-auto">
+    <div class="mb-3">
+      <input type="text" id="search-input" oninput="searchCards(this.value)" placeholder="🔍 Sök (t.ex. MTBF, Scrum, Etnografi, NFR...)" class="w-full bg-[var(--card)] text-[var(--foreground)] border border-[var(--border)] rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm" />
+    </div>
+    <div id="cards-list-container" class="space-y-2 overflow-y-auto flex-1 pb-4"></div>
+  </main>
+
+  <!-- ========= FOOTER ========= -->
+  <footer class="w-full px-4 py-3 border-t border-[var(--border)] text-center text-[10px] sm:text-xs text-[var(--muted-foreground)] bg-[var(--card)]">
+    SEP400 · Programvaruteknik · Sommerville 10th ed
+  </footer>
+
+  <!-- ============================== SCRIPT ============================== -->
+  <script>
+  // ─── DATA: FLASHCARDS ───
+  const ALL_CARDS=[
+  {id:1,m:"1",ch:"Kap 2",q:"What are the fundamental activities common to all software processes?",a:"1. <b>Specification</b> – definiera vad systemet ska göra<br>2. <b>Development</b> – designa &amp; programmera<br>3. <b>Validation</b> – kontrollera att det möter behoven<br>4. <b>Evolution</b> – vidareutveckla vid ändrade krav",cat:"Processes"},
+  {id:2,m:"1",ch:"Kap 2",q:"What are the 3 generic process models?",a:"1. <b>Waterfall</b> – sekventiell, plandriven<br>2. <b>Incremental development</b> – iterativ, delleveranser<br>3. <b>Reuse-based / Integration &amp; configuration</b> – bygg med befintliga komponenter/COTS",cat:"Processes"},
+  {id:3,m:"1",ch:"Kap 2",q:"Why are iterations limited in the waterfall model?",a:"Varje fas avslutas med formella <b>sign-offs</b>. Att gå tillbaka kräver omarbetning av specifikationer, design och kontrakt – extremt kostsamt.",cat:"Waterfall"},
+  {id:4,m:"1",ch:"Kap 2",q:"3 benefits of incremental development vs waterfall?",a:"1. <b>Lägre ändringskostnad</b> – mindre dokumentation att göra om<br>2. <b>Tidig kundåterkoppling</b> – kunden ser fungerande mjukvara<br>3. <b>Rapid delivery</b> – kritiska funktioner driftsätts tidigt",cat:"Incremental"},
+  {id:5,m:"1",ch:"Kap 2",q:"What are the 4 sectors in Boehm's spiral model?",a:"1. <b>Objective setting</b> – mål, alternativ, restriktioner<br>2. <b>Risk assessment &amp; reduction</b><br>3. <b>Development &amp; validation</b><br>4. <b>Planning</b> – utvärdera &amp; planera nästa varv",cat:"Spiral"},
+  {id:6,m:"1",ch:"Kap 3",q:"What are the 5 principles of agile methods?",a:"1. <b>Customer involvement</b><br>2. <b>Incremental delivery</b><br>3. <b>People not process</b><br>4. <b>Embrace change</b><br>5. <b>Maintain simplicity</b>",cat:"Agile"},
+  {id:7,m:"1",ch:"Kap 3",q:"3 characteristics of Extreme Programming (XP)?",a:"1. <b>User stories</b> på kort<br>2. <b>Test-first development (TDD)</b><br>3. <b>Pair programming</b>",cat:"XP"},
+  {id:8,m:"1",ch:"Kap 3",q:"What is test-first development &amp; its problems?",a:"Skriv automatiserade tester <em>före</em> koden.<br><b>Problem:</b> kan missa kantfall, svårt för GUI/trådar, falsk trygghet (ej kvalitetskrav).",cat:"TDD"},
+  {id:9,m:"1",ch:"Kap 3",q:"What is a Scrum sprint?",a:"En <b>time-boxad iteration</b> (1–4 v) där teamet färdigställer utvalda krav från Sprint Backlog till ett potentiellt levererbart produktinkrement.",cat:"Scrum"},
+  {id:10,m:"1",ch:"Kap 3",q:"Barriers to agile in large companies?",a:"• Byråkratisk kultur<br>• Fastpris-kontrakt<br>• Regulatoriska dokumentationskrav<br>• Stora distribuerade team",cat:"Agile"},
+  {id:11,m:"2",ch:"Kap 22",q:"How does software PM differ from other PM?",a:"1. Mjukvara är <b>immateriell</b> (intangible)<br>2. Inga universella standardprocesser<br>3. Projekt är ofta <b>unika</b> (one-off)",cat:"PM"},
+  {id:12,m:"2",ch:"Kap 22",q:"Three categories of risk?",a:"1. <b>Project risks</b> – tidsplan/resurser<br>2. <b>Product risks</b> – kvalitet/prestanda<br>3. <b>Business risks</b> – organisationens affär",cat:"Risk"},
+  {id:13,m:"2",ch:"Kap 22",q:"4 critical factors in people management?",a:"1. <b>Consistency</b><br>2. <b>Respect</b><br>3. <b>Inclusion</b><br>4. <b>Honesty</b>",cat:"People Mgmt"},
+  {id:14,m:"2",ch:"Kap 23",q:"What estimates must a PM produce?",a:"1. <b>Effort</b> (persontimmar/månader)<br>2. <b>Duration / Schedule</b> (kalendertid)<br>3. <b>Cost</b> (budget)",cat:"Estimation"},
+  {id:15,m:"2",ch:"Kap 23",q:"Agile planning vs plan-based development?",a:"<b>Plan-based:</b> detaljplan i förväg, avvikelser = problem<br><b>Agile:</b> detaljplanerar bara nästa sprint, scope justeras löpande efter velocity",cat:"Planning"},
+  {id:16,m:"2",ch:"Kap 23",q:"Two cost estimation techniques?",a:"1. <b>Experience-based</b> – experter, Planning Poker, Delphi<br>2. <b>Algorithmic</b> – t.ex. COCOMO, formler baserade på SLOC/FP",cat:"Estimation"},
+  {id:17,m:"3",ch:"Kap 4",q:"Functional vs non-functional requirements?",a:"<b>Functional:</b> VAD systemet ska göra (funktioner, I/O)<br><b>Non-functional:</b> HUR BRA (prestanda, säkerhet, lagkrav, process)",cat:"RE"},
+  {id:18,m:"3",ch:"Kap 4",q:"3 types of non-functional requirements?",a:"1. <b>Product</b> – prestanda, användbarhet<br>2. <b>Organizational</b> – kodstandarder, metodik<br>3. <b>External</b> – lagkrav (GDPR), interoperabilitet",cat:"NFR"},
+  {id:19,m:"3",ch:"Kap 4",q:"'Shall' vs 'Should' in requirements?",a:"<b>Shall</b> = obligatoriskt (must-have)<br><b>Should</b> = önskemål (nice-to-have)",cat:"RE"},
+  {id:20,m:"3",ch:"Kap 4",q:"5 reasons elicitation is difficult?",a:"1. Intressenter vet inte vad de vill ha<br>2. Tyst kunskap (tacit knowledge)<br>3. Motstridiga krav<br>4. Politisk påverkan<br>5. Kraven ändras ständigt",cat:"Elicitation"},
+  {id:21,m:"3",ch:"Kap 4",q:"What is ethnography in RE?",a:"<b>Observation</b> i den verkliga arbetsmiljön för att upptäcka tyst kunskap och outtalade behov.",cat:"Elicitation"},
+  {id:22,m:"3",ch:"Kap 4",q:"Checks during requirements validation?",a:"• <b>Validity</b> – löser det kundens problem?<br>• <b>Consistency</b> – inga motsägelser<br>• <b>Completeness</b> – allt med?<br>• <b>Realism</b> – genomförbart?<br>• <b>Verifiability</b> – testbart?",cat:"Validation"},
+  {id:23,m:"4",ch:"Kap 5",q:"4 perspectives for system modelling?",a:"1. <b>External</b> – kontext &amp; gränser<br>2. <b>Interaction</b> – kommunikation<br>3. <b>Structural</b> – organisation &amp; data<br>4. <b>Behavioral</b> – dynamik &amp; händelser",cat:"Modeling"},
+  {id:24,m:"4",ch:"Kap 6",q:"Kruchten's 4+1 architectural views?",a:"1. <b>Logical</b> – klasser, paket<br>2. <b>Process</b> – trådar, prestanda<br>3. <b>Implementation</b> – moduler, bibliotek<br>4. <b>Deployment</b> – hårdvara, nätverk<br>+1. <b>Use-case</b> – knyter ihop alla",cat:"Architecture"},
+  {id:25,m:"4",ch:"Kap 6",q:"Repository / Blackboard architecture?",a:"All delad data i en <b>central databas</b>. Delsystem kommunicerar genom att läsa/skriva i detta centrala lager.",cat:"Patterns"},
+  {id:26,m:"4",ch:"Kap 6",q:"Pipe and filter architecture?",a:"Data bearbetas stegvis genom <b>filter</b> (oberoende transformationer) kopplade via <b>pipes</b> (datakanaler). Ej interaktiva system.",cat:"Patterns"},
+  {id:27,m:"4",ch:"Kap 7",q:"4 elements of a design pattern (GoF)?",a:"1. <b>Name</b><br>2. <b>Problem description</b><br>3. <b>Solution description</b><br>4. <b>Consequences</b> (trade-offs)",cat:"Design Patterns"},
+  {id:28,m:"5",ch:"Kap 8",q:"Verification vs Validation?",a:"<b>Verification:</b> 'Bygger vi produkten RÄTT?' (mot spec)<br><b>Validation:</b> 'Bygger vi RÄTT produkt?' (mot kundens behov)",cat:"V&V"},
+  {id:29,m:"5",ch:"Kap 8",q:"Advantages of inspections over testing?",a:"• Kräver ej körbar kod<br>• Hittar defekten direkt (ej bara symptom)<br>• Inget <em>defect masking</em><br>• Sprider kunskap i teamet",cat:"Inspections"},
+  {id:30,m:"5",ch:"Kap 8",q:"What is an equivalence partition?",a:"Delmängd av indata med <b>samma förväntade beteende</b>. Testa ett värde per partition.<br><em>Ex:</em> ålder: &lt;0 (ogiltig), 0–17 (rabatt), 18+ (ordinarie)",cat:"Testing"},
+  {id:31,m:"5",ch:"Kap 8",q:"What is stress testing?",a:"Belasta systemet <b>långt över maxkapacitet</b>. Visar hur det havererar (graceful degradation vs krasch), avslöjar minnesläckor.",cat:"Testing"},
+  {id:32,m:"5",ch:"Kap 24",q:"What is ISO 9001?",a:"Internationell standard för <b>kvalitetsledningssystem</b>. Kräver dokumenterade, repeterbara processer – inte specifik kodmetodik.",cat:"Quality"},
+  {id:33,m:"6",ch:"Kap 10",q:"5 dependability properties?",a:"1. <b>Availability</b> (tillgänglighet)<br>2. <b>Reliability</b> (tillförlitlighet)<br>3. <b>Safety</b> (personsäkerhet)<br>4. <b>Security</b> (IT-säkerhet)<br>5. <b>Resilience</b> (återhämtning)",cat:"Dependability"},
+  {id:34,m:"6",ch:"Kap 10",q:"Fault → Error → Failure chain?",a:"<b>Fault</b> (defekt i kod/HW) → <b>Error</b> (felaktigt internt tillstånd) → <b>Failure</b> (systemet levererar ej förväntad tjänst)",cat:"Dependability"},
+  {id:35,m:"6",ch:"Kap 10",q:"How can an unreliable system be highly available?",a:"A = MTBF / (MTBF + MTTR)<br>Om MTBF = 600 s, MTTR = 1 s → A ≈ 99.8 %<br>Kraschar ofta men <b>återstartar blixtsnabbt</b>.",cat:"Availability"},
+  {id:36,m:"6",ch:"Kap 11",q:"Redundancy vs Diversity?",a:"<b>Redundancy:</b> dubblerade komponenter<br><b>Diversity:</b> implementerade <em>olika</em> (annat OS, annat språk) för att undvika common-mode failure",cat:"Reliability"},
+  {id:37,m:"6",ch:"Kap 12",q:"Why can a reliable system be unsafe?",a:"• <b>Specifikationsfel</b> – spec missade farligt driftläge<br>• Trasiga sensorer ger felaktig indata<br>• Operatörsfel – rätt kommando vid fel tidpunkt",cat:"Safety"},
+  {id:38,m:"6",ch:"Kap 13",q:"4 security threat types?",a:"1. <b>Interception</b> – obehörig åtkomst (sekretess)<br>2. <b>Interruption</b> – DoS (tillgänglighet)<br>3. <b>Modification</b> – ändra data (integritet)<br>4. <b>Fabrication</b> – injicera falsk info",cat:"Security"},
+  {id:39,m:"7",ch:"Kap 9",q:"Re-engineering vs Refactoring?",a:"<b>Refactoring:</b> små kontinuerliga kodförbättringar utan att ändra beteende<br><b>Re-engineering:</b> stort projekt på legacy-system (reverse eng, migrering)",cat:"Evolution"},
+  {id:40,m:"7",ch:"Kap 25",q:"What is a baseline in CM?",a:"En <b>formellt godkänd version</b> som fryses. Ändringar kräver formellt godkännande. Stabil referenspunkt.",cat:"CM"}
+  ];
+
+  // ─── DATA: QUIZ QUESTIONS ───
+  const QUIZ_QS=[
+  {id:101,m:"1",ch:"Kap 2",q:"Vilka är de 4 fundamentala aktiviteterna i alla programvaruprocesser?",opts:[
+    {t:"Specification, Development, Validation, Evolution",c:true},
+    {t:"Planning, Modeling, Coding, Maintenance",c:false},
+    {t:"Inception, Elaboration, Construction, Transition",c:false},
+    {t:"Elicitation, Prototyping, Stress testing, Deployment",c:false}
+  ],exp:"Sommerville: Specification, Development (design+kodning), Validation (kontroll mot behov), Evolution (vidareutveckling)."},
+  {id:102,m:"1",ch:"Kap 2",q:"Varför är iterationer begränsade i vattenfallsmodellen?",opts:[
+    {t:"Formella sign-offs efter varje fas – ändringar kräver dyr omarbetning",c:true},
+    {t:"Programmeringsspråken stöder ej objektorientering",c:false},
+    {t:"Kunden får inte se källkoden",c:false},
+    {t:"Testning pågår kontinuerligt och kan ej avbrytas",c:false}
+  ],exp:"Vattenfallsmodellen fryser varje fas med formella godkännanden. Att backa kräver att man skriver om kontrakt och specifikationer."},
+  {id:103,m:"1",ch:"Kap 3",q:"Vilka 3 egenskaper karaktäriserar XP?",opts:[
+    {t:"User stories, TDD och Pair programming",c:true},
+    {t:"Gantt-scheman, CCB och COCOMO",c:false},
+    {t:"Sprint Backlog, Scrum Master och Burn-down charts",c:false},
+    {t:"Formella specifikationer, N-version programming och ISO 9001",c:false}
+  ],exp:"XP = User stories på kort, Test-first (TDD), Parprogrammering, refaktorisering, kollektivt kodägande."},
+  {id:104,m:"3",ch:"Kap 4",q:"Skillnaden mellan funktionella och icke-funktionella krav?",opts:[
+    {t:"Funktionella = VAD systemet gör; icke-funktionella = HUR BRA (prestanda, säkerhet)",c:true},
+    {t:"Funktionella skrivs av utvecklare; icke-funktionella av kunden",c:false},
+    {t:"Funktionella = alltid 'shall'; icke-funktionella = alltid 'should'",c:false},
+    {t:"Funktionella gäller hårdvara; icke-funktionella gäller källkod",c:false}
+  ],exp:"Funktionella krav = tjänster, funktioner, I/O. Icke-funktionella = kvalitetskrav (prestanda, tillgänglighet, säkerhet) och processrestriktioner."},
+  {id:105,m:"3",ch:"Kap 4",q:"Vad innebär 'Etnografi' inom kravhantering?",opts:[
+    {t:"Analytikern observerar dagligt arbete i verklig miljö för att fånga tyst kunskap",c:true},
+    {t:"Webbenkäter till tusentals användare",c:false},
+    {t:"Automatiserad källkodsanalys efter designmönster",c:false},
+    {t:"Matematisk modellering med finita tillståndsmaskiner",c:false}
+  ],exp:"Etnografi = observation på plats. Fångar outtalade vanor och tacit knowledge som inte framkommer i intervjuer."},
+  {id:106,m:"4",ch:"Kap 6",q:"Vilka vyer ingår i Kruchtens 4+1-modell?",opts:[
+    {t:"Logical, Process, Implementation, Deployment + Use-case",c:true},
+    {t:"Context, Container, Component, Code + Cloud",c:false},
+    {t:"Model, View, Controller, Database + Service",c:false},
+    {t:"Functional, Non-functional, Data, Interface + Testing",c:false}
+  ],exp:"4+1: Logical (klasser), Process (trådar), Implementation (moduler), Deployment (HW) + Use-case (scenarier som binder ihop)."},
+  {id:107,m:"4",ch:"Kap 6",q:"Vilket arkitekturmönster lagrar all data i ett centralt delat minne?",opts:[
+    {t:"Repository / Blackboard",c:true},
+    {t:"Pipes and Filters",c:false},
+    {t:"Microservices",c:false},
+    {t:"Model-View-Controller (MVC)",c:false}
+  ],exp:"Repository/Blackboard = central datakälla. Delsystem kommunicerar indirekt via detta delade lager."},
+  {id:108,m:"5",ch:"Kap 8",q:"Vad betyder Verification vs Validation?",opts:[
+    {t:"Verification = 'Bygger vi produkten rätt?' | Validation = 'Bygger vi rätt produkt?'",c:true},
+    {t:"Verification = 'Rätt produkt?' | Validation = 'Produkten rätt?'",c:false},
+    {t:"Verification = manuell testning; Validation = automatiserade tester",c:false},
+    {t:"Verification = under drift; Validation = före kompilering",c:false}
+  ],exp:"Klassiker: Verification kontrollerar mot spec ('building the product right'). Validation kontrollerar mot kundens verkliga behov ('building the right product')."},
+  {id:109,m:"6",ch:"Kap 10",q:"MTBF = 540 s, MTTR = 60 s. Vad är tillgängligheten (Availability)?",opts:[
+    {t:"90 % → 540/(540+60)",c:true},
+    {t:"99.9 %",c:false},
+    {t:"85 %",c:false},
+    {t:"11 % → 60/540",c:false}
+  ],exp:"A = MTBF / (MTBF + MTTR) = 540/600 = 0.90 = 90 %."},
+  {id:110,m:"6",ch:"Kap 10",q:"Hur hänger Fault, Error och Failure ihop?",opts:[
+    {t:"Fault (defekt) → triggar Error (feltillstånd) → leder till Failure (systemfel)",c:true},
+    {t:"Failure → Error → Fault (omvänd kedja)",c:false},
+    {t:"De är synonymer för buggar",c:false},
+    {t:"Error = användarens fel; Fault = utvecklarens; Failure = hårdvarans",c:false}
+  ],exp:"Felkedjan: Fault (bugg i kod/HW) → Error (felaktigt internt state) → Failure (tjänsten levereras ej)."},
+  {id:111,m:"6",ch:"Kap 11",q:"Skillnaden mellan Redundancy och Diversity?",opts:[
+    {t:"Redundans = reservkomponenter; Mångfald = olika implementeringar för att undvika common-mode failure",c:true},
+    {t:"Redundans = hårdvara; Mångfald = mjukvara",c:false},
+    {t:"Mångfald = tre identiska servrar",c:false},
+    {t:"Redundans = agil princip; Mångfald = plandriven",c:false}
+  ],exp:"Redundans duplicerar. Mångfald gör att kopior är OLIKA (annat OS, annat språk) → förhindrar att alla fallerar av samma orsak."},
+  {id:112,m:"6",ch:"Kap 12",q:"Varför kan ett tillförlitligt system vara osäkert (unsafe)?",opts:[
+    {t:"Specifikationen kan vara felaktig; trasig HW ger oriktiga indata",c:true},
+    {t:"Pålitliga system saknar alltid skyddsmekanismer",c:false},
+    {t:"Tillförlitlighet handlar bara om intrång",c:false},
+    {t:"Det är omöjligt – tillförlitligt = alltid säkert",c:false}
+  ],exp:"Reliable = följer spec. Om spec missade en farlig situation orsakas olyckan helt korrekt. Operatörsfel eller trasiga sensorer bidrar också."},
+  {id:113,m:"6",ch:"Kap 13",q:"Vilken hottyp = angriparen injicerar falsk information?",opts:[
+    {t:"Fabrication",c:true},
+    {t:"Interception",c:false},
+    {t:"Interruption",c:false},
+    {t:"Modification",c:false}
+  ],exp:"Interception = stjäla, Interruption = DoS, Modification = ändra befintlig data, Fabrication = skapa/injicera falsk data."},
+  {id:114,m:"7",ch:"Kap 9",q:"Vad skiljer Refactoring från Re-engineering?",opts:[
+    {t:"Refactoring = små kontinuerliga förbättringar; Re-engineering = stort projekt på legacy-system",c:true},
+    {t:"Refactoring ändrar externa funktioner; Re-engineering gör det inte",c:false},
+    {t:"Refactoring görs på assembler; Re-engineering i Python",c:false},
+    {t:"Samma sak – olika brittisk/amerikansk term",c:false}
+  ],exp:"Refactoring = löpande, ändrar ej beteende, håller koden ren. Re-engineering = stort separat projekt för äldre system (reverse eng, migrering)."},
+  {id:115,m:"7",ch:"Kap 25",q:"Vad är en 'Baseline' inom konfigurationshantering?",opts:[
+    {t:"En formellt godkänd version som fryses – ändringar kräver formella procedurer",c:true},
+    {t:"Den första källkodsfilen i ett nytt projekt",c:false},
+    {t:"En Git-branch för experimentell kod",c:false},
+    {t:"Minimikrav på serversvarstid",c:false}
+  ],exp:"Baseline = stabil milstolpeversion. Godkänd och fryst. Alla ändringar kräver formellt godkännande."}
+  ];
+
+  // ─── STATE ───
+  let currentModule="all", filteredCards=[...ALL_CARDS], currentIndex=0, isFlipped=false;
+  let userStats=JSON.parse(localStorage.getItem("sep400_stats")||"{}");
+  let quizScore=0, quizAttempts=0, quizPool=[], quizIdx=0;
+  let touchStartX=0, touchStartY=0, swiping=false;
+
+  // ─── INIT ───
+  function init(){filterModule("all");setupKeyboard()}
+  window.onload=init;
+
+  // ─── MODE SWITCH ───
+  function switchMode(mode){
+    const els={cards:document.getElementById("mode-cards"),quiz:document.getElementById("mode-quiz"),list:document.getElementById("mode-list")};
+    const tabs={cards:document.getElementById("tab-cards"),quiz:document.getElementById("tab-quiz"),list:document.getElementById("tab-list")};
+    const inactive="flex-1 py-2.5 rounded-lg text-xs sm:text-sm font-semibold text-[var(--muted-foreground)] transition-all";
+    const active="flex-1 py-2.5 rounded-lg text-xs sm:text-sm font-semibold bg-indigo-600 text-white shadow-sm transition-all";
+    Object.values(els).forEach(e=>e.style.display="none");
+    Object.values(tabs).forEach(t=>t.className=inactive);
+    if(mode==="cards"){els.cards.style.display="flex";tabs.cards.className=active}
+    else if(mode==="quiz"){els.quiz.style.display="flex";tabs.quiz.className=active;startQuiz()}
+    else{els.list.style.display="block";tabs.list.className=active;renderList(filteredCards)}
+  }
+
+  // ─── FILTER ───
+  function filterModule(mod){
+    currentModule=mod;
+    filteredCards=mod==="all"?[...ALL_CARDS]:ALL_CARDS.filter(c=>c.m===mod);
+    currentIndex=0;isFlipped=false;renderCard();updateStats();
+    const quiz=document.getElementById("mode-quiz");
+    const list=document.getElementById("mode-list");
+    if(quiz.style.display!=="none")startQuiz();
+    if(list.style.display!=="none")renderList(filteredCards);
+  }
+
+  // ─── FLASHCARD ───
+  function renderCard(){
+    if(!filteredCards.length)return;
+    const c=filteredCards[currentIndex];
+    const el=document.getElementById("flashcard");
+    el.classList.remove("rotate-y-180");isFlipped=false;
+    document.getElementById("card-chapter-badge").innerHTML=c.ch+" · M"+c.m;
+    document.getElementById("card-front-text").innerHTML=c.q;
+    document.getElementById("card-back-text").innerHTML=c.a;
+    document.getElementById("card-category-text").textContent=c.cat;
+    document.getElementById("card-counter").textContent=`${currentIndex+1} / ${filteredCards.length}`;
+  }
+  function flipCard(){
+    const el=document.getElementById("flashcard");
+    isFlipped=!isFlipped;
+    el.classList.toggle("rotate-y-180",isFlipped);
+  }
+  function nextCard(){
+    currentIndex=(currentIndex+1)%filteredCards.length;
+    document.getElementById("flashcard-wrapper").classList.add("slide-left");
+    setTimeout(()=>document.getElementById("flashcard-wrapper").classList.remove("slide-left"),300);
+    renderCard();
+  }
+  function prevCard(){
+    currentIndex=(currentIndex-1+filteredCards.length)%filteredCards.length;
+    document.getElementById("flashcard-wrapper").classList.add("slide-right");
+    setTimeout(()=>document.getElementById("flashcard-wrapper").classList.remove("slide-right"),300);
+    renderCard();
+  }
+  function shuffleDeck(){
+    for(let i=filteredCards.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[filteredCards[i],filteredCards[j]]=[filteredCards[j],filteredCards[i]]}
+    currentIndex=0;renderCard();
+  }
+  function markCard(mastered){
+    const c=filteredCards[currentIndex];
+    userStats[c.id]=mastered?"mastered":"learning";
+    localStorage.setItem("sep400_stats",JSON.stringify(userStats));
+    updateStats();nextCard();
+  }
+  function updateStats(){
+    let ms=0,lr=0;
+    filteredCards.forEach(c=>{if(userStats[c.id]==="mastered")ms++;else if(userStats[c.id]==="learning")lr++});
+    const t=filteredCards.length;
+    document.getElementById("count-mastered").textContent=ms;
+    document.getElementById("count-learning").textContent=lr;
+    document.getElementById("progress-mastered").style.width=(t?ms/t*100:0)+"%";
+    document.getElementById("progress-learning").style.width=(t?lr/t*100:0)+"%";
+  }
+  function resetStats(){if(confirm("Nollställa alla framsteg?")){userStats={};localStorage.removeItem("sep400_stats");updateStats()}}
+
+  // ─── TOUCH / SWIPE ───
+  function handleTouchStart(e){
+    const t=e.touches[0];touchStartX=t.clientX;touchStartY=t.clientY;swiping=true;
+  }
+  function handleTouchMove(e){/* prevent scroll while swiping horizontally */
+    if(!swiping)return;
+    const dx=Math.abs(e.touches[0].clientX-touchStartX);
+    const dy=Math.abs(e.touches[0].clientY-touchStartY);
+    if(dx>dy&&dx>10)e.preventDefault();
+  }
+  function handleTouchEnd(e){
+    if(!swiping)return;swiping=false;
+    const dx=e.changedTouches[0].clientX-touchStartX;
+    const dy=Math.abs(e.changedTouches[0].clientY-touchStartY);
+    if(Math.abs(dx)>60&&Math.abs(dx)>dy){
+      if(dx<0)nextCard();else prevCard();
+    }
+  }
+
+  // ─── KEYBOARD ───
+  function setupKeyboard(){
+    window.addEventListener("keydown",e=>{
+      if(e.target.tagName==="INPUT"||e.target.tagName==="SELECT")return;
+      if(document.getElementById("mode-cards").style.display!=="none"){
+        if(e.code==="Space"){e.preventDefault();flipCard()}
+        else if(e.code==="ArrowRight"){e.preventDefault();nextCard()}
+        else if(e.code==="ArrowLeft"){e.preventDefault();prevCard()}
+        else if(e.key==="1")markCard(false);
+        else if(e.key==="2")markCard(true);
+      }
+    });
+  }
+
+  // ─── QUIZ ───
+  function startQuiz(){
+    const pool=currentModule==="all"?[...QUIZ_QS]:QUIZ_QS.filter(q=>q.m===currentModule);
+    quizPool=pool.length?pool:[...QUIZ_QS];
+    quizPool.sort(()=>0.5-Math.random());
+    quizIdx=0;genQ();
+  }
+  function generateQuizQuestion(){genQ()}
+  function genQ(){
+    if(!quizPool.length)return;
+    const q=quizPool[quizIdx%quizPool.length];quizIdx++;
+    document.getElementById("quiz-num").textContent=quizAttempts+1;
+    document.getElementById("quiz-chapter-tag").innerHTML=q.ch+" · M"+q.m;
+    document.getElementById("quiz-question-text").textContent=q.q;
+    document.getElementById("quiz-feedback-box").style.display="none";
+    document.getElementById("quiz-next-btn").style.display="none";
+    const opts=[...q.opts].sort(()=>0.5-Math.random());
+    const con=document.getElementById("quiz-options-container");con.innerHTML="";
+    opts.forEach((o,i)=>{
+      const b=document.createElement("button");
+      b.className="quiz-opt w-full text-left p-4 rounded-xl border border-[var(--border)] bg-[var(--card)] text-sm leading-snug flex items-start gap-3 text-[var(--foreground)] cursor-pointer active:scale-[0.98]";
+      b.innerHTML=`<span class="w-7 h-7 rounded-full border-2 border-[var(--border)] flex items-center justify-center text-xs font-bold shrink-0 mt-0.5 bg-[var(--background)]">${String.fromCharCode(65+i)}</span><div class="flex-1 pt-0.5">${o.t}</div>`;
+      b.onclick=()=>pickAnswer(b,o.c,q);
+      con.appendChild(b);
+    });
+  }
+  function pickAnswer(btn,correct,q){
+    const con=document.getElementById("quiz-options-container");
+    const btns=con.querySelectorAll("button");
+    btns.forEach(b=>{b.disabled=true;b.classList.remove("cursor-pointer")});
+    quizAttempts++;
+    if(correct){
+      quizScore++;
+      btn.style.background="rgba(16,185,129,0.15)";btn.style.borderColor="#10b981";
+    }else{
+      btn.style.background="rgba(239,68,68,0.15)";btn.style.borderColor="#ef4444";
+      const ct=q.opts.find(o=>o.c).t;
+      btns.forEach(b=>{if(b.textContent.includes(ct.substring(0,25))){b.style.background="rgba(16,185,129,0.1)";b.style.borderColor="#10b981"}});
+    }
+    document.getElementById("quiz-score").textContent=quizScore;
+    document.getElementById("quiz-attempted").textContent=quizAttempts;
+    const fb=document.getElementById("quiz-feedback-box");
+    fb.style.display="block";
+    fb.className=`p-4 rounded-xl mb-4 text-sm leading-relaxed border fade-in ${correct?"bg-emerald-500/10 border-emerald-500/30":"bg-rose-500/10 border-rose-500/30"}`;
+    fb.innerHTML=`<div class="font-bold mb-1">${correct?"🎉 Rätt!":"❌ Fel"}</div><div class="text-[var(--foreground)]">${q.exp}</div>`;
+    document.getElementById("quiz-next-btn").style.display="block";
+  }
+
+  // ─── LIST ───
+  function renderList(cards){
+    const con=document.getElementById("cards-list-container");con.innerHTML="";
+    if(!cards.length){con.innerHTML='<div class="p-8 text-center text-sm text-[var(--muted-foreground)]">Inga träffar.</div>';return}
+    cards.forEach(c=>{
+      const d=document.createElement("details");
+      d.className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 group";
+      d.innerHTML=`<summary class="font-semibold text-sm cursor-pointer list-none flex items-start justify-between gap-2"><span class="flex items-start gap-2"><span class="shrink-0 px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-500 text-[10px] font-bold mt-0.5">${c.ch}</span><span class="leading-snug">${c.q}</span></span><span class="text-xs text-[var(--muted-foreground)] group-open:rotate-180 transition-transform shrink-0 mt-1">▼</span></summary><div class="mt-3 pt-3 border-t border-[var(--border)] text-sm leading-relaxed">${c.a}<div class="mt-2 text-[10px] text-[var(--muted-foreground)]">${c.cat}</div></div>`;
+      con.appendChild(d);
+    });
+  }
+  function searchCards(v){
+    const q=v.toLowerCase().trim();
+    renderList(filteredCards.filter(c=>c.q.toLowerCase().includes(q)||c.a.toLowerCase().includes(q)||c.cat.toLowerCase().includes(q)||c.ch.toLowerCase().includes(q)));
+  }
+  </script>
+</body>
+</html>
