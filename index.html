@@ -32,45 +32,17 @@
     }
     * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
     html, body { overscroll-behavior: none; }
-    .perspective-1000 { perspective: 1000px; -webkit-perspective: 1000px; }
-    .transform-style-3d { transform-style: preserve-3d; -webkit-transform-style: preserve-3d; }
-    .card-face {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      backface-visibility: hidden;
-      -webkit-backface-visibility: hidden;
-    }
-    .card-front {
-      transform: rotateY(0deg);
-      -webkit-transform: rotateY(0deg);
-      z-index: 2;
-    }
-    .card-back {
-      transform: rotateY(180deg);
-      -webkit-transform: rotateY(180deg);
-      z-index: 1;
-    }
-    .card-flip {
-      transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-      -webkit-transition: -webkit-transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .rotate-y-180 {
-      transform: rotateY(180deg);
-      -webkit-transform: rotateY(180deg);
-    }
     .quiz-opt { transition: all 0.15s ease; }
     .quiz-opt:active { transform: scale(0.98); }
-    .fade-in { animation: fadeIn 0.25s ease; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
-    .slide-left { animation: slideLeft 0.25s ease; }
-    @keyframes slideLeft { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); } }
-    .slide-right { animation: slideRight 0.25s ease; }
-    @keyframes slideRight { from { opacity: 0; transform: translateX(-30px); } to { opacity: 1; transform: translateX(0); } }
-    ::-webkit-scrollbar { width: 4px; }
+    .fade-in { animation: fadeIn 0.2s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+    .slide-left { animation: slideLeft 0.2s ease; }
+    @keyframes slideLeft { from { opacity: 0.3; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+    .slide-right { animation: slideRight 0.2s ease; }
+    @keyframes slideRight { from { opacity: 0.3; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
+    ::-webkit-scrollbar { width: 5px; }
     ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: rgba(100,100,100,0.2); border-radius: 2px; }
+    ::-webkit-scrollbar-thumb { background: rgba(100,100,100,0.25); border-radius: 3px; }
   </style>
 </head>
 <body class="bg-[var(--background)] text-[var(--foreground)] antialiased min-h-screen flex flex-col select-none font-sans">
@@ -133,40 +105,40 @@
       </div>
     </div>
 
-    <!-- Flashcard -->
-    <div id="flashcard-wrapper" class="relative flex-1 min-h-[280px] max-h-[440px] perspective-1000 cursor-pointer mb-3" onclick="flipCard()" ontouchstart="handleTouchStart(event)" ontouchmove="handleTouchMove(event)" ontouchend="handleTouchEnd(event)">
-      <div id="flashcard" class="w-full h-full relative transform-style-3d card-flip rounded-2xl shadow-md border border-[var(--border)]">
+    <!-- Flashcard Display Box (Single Container = 100% Guaranteed Visibility) -->
+    <div id="flashcard-wrapper" class="relative flex-1 min-h-[300px] max-h-[460px] cursor-pointer mb-3" onclick="handleCardClick()" ontouchstart="handleTouchStart(event)" ontouchmove="handleTouchMove(event)" ontouchend="handleTouchEnd(event)">
+      <div id="flashcard" class="w-full h-full rounded-2xl shadow-md border-2 border-[var(--border)] bg-[var(--card)] p-5 sm:p-7 flex flex-col justify-between transition-colors duration-200">
 
-        <!-- FRONT -->
-        <div id="card-face-front" class="card-face card-front p-5 sm:p-7 flex flex-col justify-between rounded-2xl bg-[var(--card)]">
-          <div class="flex items-center justify-between gap-2 shrink-0">
-            <span id="card-chapter-badge" class="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-indigo-500/10 text-indigo-500 border border-indigo-500/20 whitespace-nowrap">Kap 2</span>
-            <span class="text-xs text-[var(--muted-foreground)]">Klicka eller tryck för svar</span>
-          </div>
-          <div class="flex-1 flex items-center justify-center py-4">
-            <div class="text-center px-2">
-              <span class="text-xs uppercase font-bold tracking-widest text-[var(--muted-foreground)] block mb-2">Fråga</span>
-              <h2 id="card-front-text" class="text-base sm:text-xl font-bold leading-relaxed">Laddar...</h2>
-            </div>
-          </div>
-          <div class="text-center text-xs text-[var(--muted-foreground)] shrink-0">
-            Svep vänster / höger för att bläddra
-          </div>
+        <!-- Top Header Row -->
+        <div class="flex items-center justify-between pb-3 border-b border-[var(--border)] shrink-0">
+          <span id="card-chapter-badge" class="px-2.5 py-1 text-xs font-semibold rounded-full bg-indigo-500/10 text-indigo-500 border border-indigo-500/20 whitespace-nowrap">Kap 2 &bull; Modul 1</span>
+          <span id="card-state-badge" class="px-2.5 py-1 text-xs font-bold uppercase tracking-wider rounded-md bg-[var(--background)] text-[var(--muted-foreground)]">Fråga</span>
         </div>
 
-        <!-- BACK -->
-        <div id="card-face-back" style="visibility: hidden;" class="card-face card-back p-5 sm:p-7 flex flex-col justify-between rounded-2xl bg-[var(--card)] border-t-4 border-indigo-500">
-          <div class="flex items-center justify-between border-b border-[var(--border)] pb-2 mb-2 shrink-0">
-            <span class="text-xs uppercase font-bold tracking-wider text-indigo-500">Svar och förklaring</span>
-            <span class="text-xs text-[var(--muted-foreground)]">Tryck för att vända</span>
+        <!-- Center Content Area (Scrollable for Long Explanations) -->
+        <div id="card-scroll-area" class="flex-1 overflow-y-auto my-3 pr-1">
+
+          <!-- QUESTION VIEW -->
+          <div id="card-question-box" class="min-h-full flex flex-col justify-center items-center text-center py-2">
+            <span class="text-xs uppercase font-bold tracking-widest text-[var(--muted-foreground)] block mb-2">Fråga</span>
+            <h2 id="card-front-text" class="text-base sm:text-xl font-bold leading-relaxed text-[var(--foreground)]">Laddar...</h2>
           </div>
-          <div class="flex-1 overflow-y-auto pr-1 my-1">
-            <div id="card-back-text" class="text-sm sm:text-base leading-relaxed"></div>
+
+          <!-- ANSWER VIEW -->
+          <div id="card-answer-box" style="display: none;" class="py-1 fade-in text-left">
+            <div class="mb-3 text-xs text-[var(--muted-foreground)] pb-2 border-b border-[var(--border)]">
+              <span class="font-bold text-[var(--foreground)]">Fråga:</span> <span id="card-question-recap" class="text-[var(--foreground)] font-medium"></span>
+            </div>
+            <span class="text-xs uppercase font-bold tracking-wider text-indigo-500 block mb-2">Svar och förklaring:</span>
+            <div id="card-back-text" class="text-sm sm:text-base leading-relaxed text-[var(--foreground)] space-y-2"></div>
           </div>
-          <div class="pt-2 border-t border-[var(--border)] text-xs text-[var(--muted-foreground)] flex justify-between items-center shrink-0">
-            <span id="card-category-text"></span>
-            <span>SEP400</span>
-          </div>
+
+        </div>
+
+        <!-- Bottom Footer Row -->
+        <div class="pt-2 border-t border-[var(--border)] text-xs text-[var(--muted-foreground)] flex justify-between items-center shrink-0">
+          <span id="card-category-text">Processes</span>
+          <span id="card-flip-hint">Tryck på kortet för att se svar</span>
         </div>
 
       </div>
@@ -179,8 +151,8 @@
         <button onclick="prevCard()" class="flex-1 py-3 rounded-xl border border-[var(--border)] bg-[var(--card)] active:bg-[var(--border)] text-sm font-semibold transition-colors">
           Föregående
         </button>
-        <button onclick="flipCard()" class="flex-1 py-3 rounded-xl bg-indigo-600 active:bg-indigo-700 text-white text-sm font-semibold shadow-sm transition-colors">
-          Vänd kort
+        <button id="btn-flip" onclick="flipCard()" class="flex-1 py-3 rounded-xl bg-indigo-600 active:bg-indigo-700 text-white text-sm font-semibold shadow-sm transition-colors">
+          Visa svar
         </button>
         <button onclick="nextCard()" class="flex-1 py-3 rounded-xl border border-[var(--border)] bg-[var(--card)] active:bg-[var(--border)] text-sm font-semibold transition-colors">
           Nästa
@@ -399,7 +371,6 @@
   let userStats=JSON.parse(localStorage.getItem("sep400_stats")||"{}");
   let quizScore=0, quizAttempts=0, quizPool=[], quizIdx=0;
   let touchStartX=0, touchStartY=0, swiping=false;
-  let flipTimer=null;
 
   function init(){
     filterModule("all");
@@ -425,7 +396,6 @@
     currentModule=mod;
     filteredCards=mod==="all"?[...ALL_CARDS]:ALL_CARDS.filter(c=>c.m===mod);
     currentIndex=0;
-    resetCardState();
     renderCard();
     updateStats();
     const quiz=document.getElementById("mode-quiz");
@@ -434,55 +404,67 @@
     if(list.style.display!=="none")renderList(filteredCards);
   }
 
-  function resetCardState(){
-    if(flipTimer)clearTimeout(flipTimer);
-    isFlipped=false;
-    const el=document.getElementById("flashcard");
-    const front=document.getElementById("card-face-front");
-    const back=document.getElementById("card-face-back");
-    el.classList.remove("rotate-y-180");
-    front.style.visibility="visible";
-    back.style.visibility="hidden";
-  }
-
   // FLASHCARD ACTIONS
   function renderCard(){
     if(!filteredCards.length)return;
     const c=filteredCards[currentIndex];
-    resetCardState();
+    isFlipped=false;
+
+    const cardEl = document.getElementById("flashcard");
+    const qBox = document.getElementById("card-question-box");
+    const aBox = document.getElementById("card-answer-box");
+    const stateBadge = document.getElementById("card-state-badge");
+    const flipHint = document.getElementById("card-flip-hint");
+    const flipBtn = document.getElementById("btn-flip");
+    const scrollArea = document.getElementById("card-scroll-area");
+
+    qBox.style.display = "flex";
+    aBox.style.display = "none";
+    if (scrollArea) scrollArea.scrollTop = 0;
+    cardEl.style.borderColor = "var(--border)";
+    stateBadge.className = "px-2.5 py-1 text-xs font-bold uppercase tracking-wider rounded-md bg-[var(--background)] text-[var(--muted-foreground)]";
+    stateBadge.textContent = "Fråga";
+    flipHint.textContent = "Tryck på kortet för att se svar";
+    if (flipBtn) flipBtn.textContent = "Visa svar";
+
     document.getElementById("card-chapter-badge").innerHTML=c.ch+" &bull; Modul "+c.m;
     document.getElementById("card-front-text").innerHTML=c.q;
+    document.getElementById("card-question-recap").innerHTML=c.q;
     document.getElementById("card-back-text").innerHTML=c.a;
     document.getElementById("card-category-text").textContent=c.cat;
     document.getElementById("card-counter").textContent=(currentIndex+1)+" / "+filteredCards.length;
   }
 
   function flipCard(){
-    const el=document.getElementById("flashcard");
-    const front=document.getElementById("card-face-front");
-    const back=document.getElementById("card-face-back");
-    if(flipTimer)clearTimeout(flipTimer);
-
+    if(!filteredCards.length)return;
     isFlipped=!isFlipped;
-    el.classList.toggle("rotate-y-180",isFlipped);
 
-    // Switch visibility midway through rotation (200ms) to ensure flawless display on all mobile GPUs
-    if(isFlipped){
-      flipTimer=setTimeout(()=>{
-        if(isFlipped){
-          front.style.visibility="hidden";
-          back.style.visibility="visible";
-        }
-      },200);
-      back.style.visibility="visible";
-    }else{
-      flipTimer=setTimeout(()=>{
-        if(!isFlipped){
-          back.style.visibility="hidden";
-          front.style.visibility="visible";
-        }
-      },200);
-      front.style.visibility="visible";
+    const cardEl = document.getElementById("flashcard");
+    const qBox = document.getElementById("card-question-box");
+    const aBox = document.getElementById("card-answer-box");
+    const stateBadge = document.getElementById("card-state-badge");
+    const flipHint = document.getElementById("card-flip-hint");
+    const flipBtn = document.getElementById("btn-flip");
+    const scrollArea = document.getElementById("card-scroll-area");
+
+    if (isFlipped) {
+      qBox.style.display = "none";
+      aBox.style.display = "block";
+      if (scrollArea) scrollArea.scrollTop = 0;
+      cardEl.style.borderColor = "#6366f1";
+      stateBadge.className = "px-2.5 py-1 text-xs font-bold uppercase tracking-wider rounded-md bg-indigo-500/15 text-indigo-500 border border-indigo-500/30";
+      stateBadge.textContent = "Svar och förklaring";
+      flipHint.textContent = "Tryck för att se frågan igen";
+      if (flipBtn) flipBtn.textContent = "Visa fråga";
+    } else {
+      aBox.style.display = "none";
+      qBox.style.display = "flex";
+      if (scrollArea) scrollArea.scrollTop = 0;
+      cardEl.style.borderColor = "var(--border)";
+      stateBadge.className = "px-2.5 py-1 text-xs font-bold uppercase tracking-wider rounded-md bg-[var(--background)] text-[var(--muted-foreground)]";
+      stateBadge.textContent = "Fråga";
+      flipHint.textContent = "Tryck för att se svar";
+      if (flipBtn) flipBtn.textContent = "Visa svar";
     }
   }
 
@@ -490,7 +472,7 @@
     currentIndex=(currentIndex+1)%filteredCards.length;
     const w=document.getElementById("flashcard-wrapper");
     w.classList.add("slide-left");
-    setTimeout(()=>w.classList.remove("slide-left"),250);
+    setTimeout(()=>w.classList.remove("slide-left"),200);
     renderCard();
   }
 
@@ -498,7 +480,7 @@
     currentIndex=(currentIndex-1+filteredCards.length)%filteredCards.length;
     const w=document.getElementById("flashcard-wrapper");
     w.classList.add("slide-right");
-    setTimeout(()=>w.classList.remove("slide-right"),250);
+    setTimeout(()=>w.classList.remove("slide-right"),200);
     renderCard();
   }
 
@@ -540,17 +522,20 @@
     }
   }
 
-  // TOUCH / SWIPE
+  // TOUCH / SWIPE & CARD CLICK
+  let touchStartX=0,touchStartY=0,swiping=false,touchMoved=false;
   function handleTouchStart(e){
     const t=e.touches[0];
     touchStartX=t.clientX;
     touchStartY=t.clientY;
     swiping=true;
+    touchMoved=false;
   }
   function handleTouchMove(e){
     if(!swiping)return;
     const dx=Math.abs(e.touches[0].clientX-touchStartX);
     const dy=Math.abs(e.touches[0].clientY-touchStartY);
+    if(dx>8||dy>8) touchMoved=true;
     if(dx>dy&&dx>10)e.preventDefault();
   }
   function handleTouchEnd(e){
@@ -562,6 +547,13 @@
       if(dx<0)nextCard();
       else prevCard();
     }
+  }
+  function handleCardClick(){
+    if(touchMoved){
+      touchMoved=false;
+      return;
+    }
+    flipCard();
   }
 
   // KEYBOARD
